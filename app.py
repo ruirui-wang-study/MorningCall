@@ -22,6 +22,13 @@ GOLD_SYMBOL = os.getenv("GOLD_SYMBOL", "XAU/USD").strip()
 # - HIDE_MODULE_ON_MISSING_KEY=0：缺 key 显示“获取失败/未配置”提示
 HIDE_MODULE_ON_MISSING_KEY = os.getenv("HIDE_MODULE_ON_MISSING_KEY", "1").strip() == "1"
 
+IELTS_WORDLIST_URL = os.getenv(
+    "IELTS_WORDLIST_URL",
+    "https://raw.githubusercontent.com/fanhongtao/IELTS/master/IELTS%20Word%20List.txt"
+).strip()
+
+DICT_API_ENABLED = os.getenv("DICT_API_ENABLED", "1").strip() == "1"
+
 # ================== 文案库 ==================
 GREETINGS_WORKDAY = [
     "愿你今天状态在线，推进顺利。",
@@ -171,6 +178,115 @@ def get_gold_price():
     if not price:
         raise RuntimeError(f"金价返回异常: {data}")
     return float(price)
+def get_gold_daily_series(outputsize: int = 120):
+    """
+    Twelve Data time_series：拉最近一段 1day 日线（values 按时间倒序）
+    """
+    if not TWELVE_DATA_API_KEY:
+        raise RuntimeError("TWELVE_DATA_API_KEY 未配置")
+
+    url = "https://api.twelvedata.com/time_series"
+    params = {
+        "symbol": GOLD_SYMBOL,
+        "interval": "1day",
+        "outputsize": outputsize,
+        "apikey": TWELVE_DATA_API_KEY,
+        "format": "JSON",
+    }
+    r = requests.get(url, params=params, timeout=12)
+    r.raise_for_status()
+    data = r.json()
+
+    values = data.get("values") or []
+    if not values:
+        raise RuntimeError(f"time_series 返回异常: {data}")
+
+    # values 形如：[{ "datetime": "2026-03-08", "close": "2918.35", ... }, ...]
+    return values
+
+def pick_close_on_or_before(values, target_date: dt.date):
+    """
+    从 time_series values（倒序）中，取“<= target_date”的最近一个交易日 close
+    """
+    for row in values:
+        # datetime 可能是 "YYYY-MM-DD" 或 "YYYY-MM-DD HH:MM:SS"
+        d_str = (row.get("datetime") or "")[:10]
+        if not d_str:
+            continue
+        d = dt.date.fromisoformat(d_str)
+        if d <= target_date:
+            return d, float(row["close"])
+    raise RuntimeError(f"找不到 {target_date} 或之前的交易日数据")
+
+# ================== 单词（IELTS）==================
+def fetch_ielts_wordlist(url: str, timeout: int = 15) -> list[str]:
+    """
+    从线上 IELTS 词表拉取单词列表（每次 run 拉一次，足够用）
+    """
+    r = requests.get(url, timeout=timeout)
+    r.raise_for_status()
+    text = r.text
+
+    words = []
+    for line in text.splitlines():
+        w = line.strip()
+        if not w:
+            continue
+        # 过滤明显不是单词的行（有些词表可能带序号/注释）
+        if any(ch.isdigit() for ch in w):
+            continue
+        # 只保留单个词（你也可以放开短语，这里先保守）
+        if " " in w:
+            continue
+        words.append(w)
+
+    # 去重、保持顺序
+    seen = set()
+    uniq = []
+    for w in words:
+        lw = w.lower()
+        if lw not in seen:
+            seen.add(lw)
+            uniq.append(w)
+    if not uniq:
+        raise RuntimeError("IELTS 词表为空/解析失败")
+    return uniq
+
+def pick_word_of_day_from_list(words: list[str], d: dt.date) -> str:
+    """
+    用日期做确定性选择：同一天永远选同一个词；无需保存状态
+    """
+    base = dt.date(2024, 1, 1)
+    idx = (d - base).days % len(words)
+    return words[idx]
+
+def lookup_definition_free_dict(word: str, timeout: int = 12) -> dict:
+    """
+    dictionaryapi.dev：返回英文释义/词性/例句（尽力取第一个）
+    """
+    url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
+    r = requests.get(url, timeout=timeout)
+    if r.status_code != 200:
+        return {}  # 有些词可能查不到
+    data = r.json()
+    if not isinstance(data, list) or not data:
+        return {}
+
+    # 结构大致：[ { meanings: [ { partOfSpeech, definitions: [ { definition, example } ] } ] } ]
+    entry = data[0]
+    meanings = entry.get("meanings") or []
+    for m in meanings:
+        pos = m.get("partOfSpeech")
+        defs = m.get("definitions") or []
+        if defs:
+            definition = defs[0].get("definition")
+            example = defs[0].get("example")
+            out = {}
+            if pos: out["pos"] = pos
+            if definition: out["definition"] = definition
+            if example: out["example"] = example
+            return out
+    return {}
 
 # ================== “缺 key 就隐藏模块”的封装 ==================
 def maybe_section(title: str, builder_fn, required_keys_ok: bool, show_when_missing: str = ""):
@@ -212,11 +328,59 @@ def build_text(now_local: dt.datetime) -> str:
         ])
     except Exception as e:
         weather_block = f"天气（上海市青浦区）\n获取失败：{e}"
+    
+    # 每日 IELTS 单词（线上词库）
+    word_section = ""
+    try:
+        words = fetch_ielts_wordlist(IELTS_WORDLIST_URL)
+        w = pick_word_of_day_from_list(words, now_local.date())
+
+        # 词典释义（可开关）
+        if DICT_API_ENABLED:
+            info = lookup_definition_free_dict(w)
+        else:
+            info = {}
+
+        lines = ["每日英文单词（IELTS）", w]
+        if info.get("pos"):
+            lines.append(f"词性：{info['pos']}")
+        if info.get("definition"):
+            lines.append(f"释义：{info['definition']}")
+        if info.get("example"):
+            lines.append(f"例句：{info['example']}")
+        word_section = "\n".join(lines)
+    except Exception:
+        # 缺 key 隐藏模块逻辑：这里不需要 key，但网络/解析失败时直接隐藏即可
+        word_section = ""
 
     # 金价模块（放在新闻上面）
     def build_gold_content():
-        gold = get_gold_price()
-        return f"国际金价({GOLD_SYMBOL})：{gold:.2f} 美元/盎司"
+        values = get_gold_daily_series(outputsize=120)
+
+        # “今日”用最近一个交易日收盘价
+        today = dt.datetime.now(tz=tz.gettz(TIMEZONE)).date()
+        d0, p0 = pick_close_on_or_before(values, today)
+
+        # 前一交易日：用 d0-1 天去找“<=目标日”的最近交易日即可
+        d1, p1 = pick_close_on_or_before(values, d0 - dt.timedelta(days=1))
+
+        # 近 7 天 / 近 30 天：同样找“<=目标日”的最近交易日
+        d7, p7 = pick_close_on_or_before(values, d0 - dt.timedelta(days=7))
+        d30, p30 = pick_close_on_or_before(values, d0 - dt.timedelta(days=30))
+
+        def fmt_change(new, old):
+            diff = new - old
+            pct = (diff / old) * 100 if old else 0.0
+            sign = "+" if diff >= 0 else ""
+            return f"{sign}{diff:.2f} ({sign}{pct:.2f}%)"
+
+        lines = [
+            f"最新收盘（{d0}）：{p0:.2f} 美元/盎司",
+            f"较前一交易日（{d1}）：{fmt_change(p0, p1)}",
+            f"近 7 天（对比 {d7}）：{fmt_change(p0, p7)}",
+            f"近 30 天（对比 {d30}）：{fmt_change(p0, p30)}",
+        ]
+        return "\n".join(lines)
 
     gold_section = maybe_section(
         title="金价播报",
@@ -261,7 +425,7 @@ def build_text(now_local: dt.datetime) -> str:
     ]
 
     # 只添加非空模块
-    for section in [gold_section, tech_section, fin_section]:
+    for section in [gold_section,word_section, tech_section, fin_section]:
         if section.strip():
             blocks += ["", section]
 

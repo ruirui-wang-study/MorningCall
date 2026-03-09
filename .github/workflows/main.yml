@@ -6,7 +6,7 @@ on:
     # 08:30（上海/新加坡 UTC+8）= 00:30 UTC
     - cron: "30 23 * * *"
   workflow_dispatch: {}
-  
+
 jobs:
   send:
     runs-on: ubuntu-latest
@@ -37,6 +37,8 @@ jobs:
           GOLD_SYMBOL: "XAU/USD"
           # 可选：缺 key 隐藏模块（你 app.py 里有这个开关）
           HIDE_MODULE_ON_MISSING_KEY: "1"
+          IELTS_WORDLIST_URL: "https://raw.githubusercontent.com/fanhongtao/IELTS/master/IELTS%20Word%20List.txt"
+          DICT_API_ENABLED: "1"
         run: |
           python app.py
           echo "=== subject ==="
