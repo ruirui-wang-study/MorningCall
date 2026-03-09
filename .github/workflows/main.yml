@@ -4,9 +4,9 @@ on:
   schedule:
     # GitHub Actions cron 使用 UTC
     # 08:30（上海/新加坡 UTC+8）= 00:30 UTC
-    - cron: "30 0 * * *"
+    - cron: "30 23 * * *"
   workflow_dispatch: {}
-
+  
 jobs:
   send:
     runs-on: ubuntu-latest
