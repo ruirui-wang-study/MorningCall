@@ -1,6 +1,7 @@
 name: Daily Good Morning Email
 
 on:
+  push:
   schedule:
     # GitHub Actions cron 使用 UTC
     # 08:30（上海/新加坡 UTC+8）= 00:30 UTC

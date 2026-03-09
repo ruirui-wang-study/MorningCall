@@ -330,7 +330,7 @@ def build_text(now_local: dt.datetime) -> str:
 
         info = lookup_definition_free_dict(word) if DICT_API_ENABLED else {}
 
-        lines = ["c:\Users\RACHEL~1.WAN\AppData\Local\Temp\SGPicFaceTpBq\23504\7EABC2A7.png 每日单词", word]
+        lines = ["📚 每日单词", word]
         lines.append(f"词性：{info.get('pos', '—')}")
         lines.append(f"释义：{info.get('definition', '—（词典未返回）')}")
         lines.append(f"例句：{info.get('example', '—（该词条未提供例句）')}")
@@ -362,7 +362,7 @@ def build_text(now_local: dt.datetime) -> str:
         ])
 
     gold_section = maybe_section(
-        title="c:\Users\RACHEL~1.WAN\AppData\Local\Temp\SGPicFaceTpBq\23504\7EAB66CB.png 金价播报",
+        title="💰 金价播报",
         builder_fn=build_gold_content,
         required_keys_ok=bool(TWELVE_DATA_API_KEY),
         show_when_missing="未配置金价数据源（TWELVE_DATA_API_KEY）。"
@@ -394,7 +394,7 @@ def build_text(now_local: dt.datetime) -> str:
 
     # 组装：天气 -> 金价 -> 单词 -> 科技 -> 财经
     blocks = [
-        "小公主早安 c:\Users\RACHEL~1.WAN\AppData\Local\Temp\SGPicFaceTpBq\23504\7EACFEFF.png \n☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
+        "小公主早安 🌸\n☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
         f"{date_str} {weekday_cn}",
         "",
         greeting,
