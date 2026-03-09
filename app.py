@@ -392,20 +392,26 @@ def build_text(now_local: dt.datetime) -> str:
         show_when_missing="未配置新闻数据源（NEWS_API_KEY），或当前为周末已默认隐藏新闻。"
     )
 
-    # 组装：单词 -> 天气 -> 金价 -> 科技 -> 财经
+    # 组装：天气 -> 金价 -> 单词 -> 科技 -> 财经
     blocks = [
         "早安☀️",
         f"{date_str} {weekday_cn}",
         "",
         greeting,
+        "",
+        weather_block,
     ]
 
+    # 金价先放
+    if gold_section.strip():
+        blocks += ["", gold_section]
+
+    # 单词放在金价后
     if word_section.strip():
         blocks += ["", word_section]
 
-    blocks += ["", weather_block]
-
-    for section in [gold_section, tech_section, fin_section]:
+    # 新闻（科技在财经上面）
+    for section in [tech_section, fin_section]:
         if section.strip():
             blocks += ["", section]
 
