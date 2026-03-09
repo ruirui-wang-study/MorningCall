@@ -37,21 +37,42 @@ GREETINGS_WEEKEND = [
 
 # ================== 天气（Open-Meteo，无需 Key）==================
 def geocode_qingpu():
+    """
+    Open-Meteo Geocoding 对中文有时无结果，因此：
+    1) 多个关键词轮询（中文/英文）
+    2) 加 country_code=CN 限定
+    3) 全失败就使用青浦区兜底经纬度
+    """
     url = "https://geocoding-api.open-meteo.com/v1/search"
-    params = {
-        "name": "上海市青浦区",
-        "count": 1,
-        "language": "zh",
-        "format": "json",
-    }
-    r = requests.get(url, params=params, timeout=12)
-    r.raise_for_status()
-    data = r.json()
-    results = data.get("results") or []
-    if not results:
-        raise RuntimeError(f"地理编码无结果: {data}")
-    top = results[0]
-    return float(top["latitude"]), float(top["longitude"]), top.get("name", "青浦区")
+
+    queries = [
+        "上海市青浦区",
+        "青浦区",
+        "Qingpu District, Shanghai",
+        "Qingpu, Shanghai",
+        "Qingpu District",
+        "Qingpu Shanghai China",
+    ]
+
+    for q in queries:
+        params = {
+            "name": q,
+            "count": 5,
+            "language": "en",        # 英文索引通常更稳；返回字段不影响后续
+            "format": "json",
+            "country_code": "CN",
+        }
+        r = requests.get(url, params=params, timeout=12)
+        r.raise_for_status()
+        data = r.json()
+        results = data.get("results") or []
+        if results:
+            top = results[0]
+            return float(top["latitude"]), float(top["longitude"]), top.get("name", "Qingpu")
+
+    # 兜底：青浦区大致中心点坐标
+    # 来源参考：Qingpu, Shanghai, China lat/long ≈ 31.150681, 121.124176
+    return 31.150681, 121.124176, "青浦区(兜底坐标)"
 
 def get_weather_qingpu():
     lat, lon, place = geocode_qingpu()
