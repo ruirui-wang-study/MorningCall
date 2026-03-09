@@ -56,7 +56,7 @@ jobs:
           password: ${{ secrets.MAIL_PASSWORD }}   # QQ邮箱SMTP授权码（不是登录密码）
           from: ${{ secrets.MAIL_USERNAME }}
           to: 962302845@qq.com
-          subject: "早安播报"
+          subject: "小公主起床啦"
           # 关键：直接从文件读正文，避免多行 env 传输问题
           body: file://email_body.txt
           # 如果你未来想发 HTML，可用：
