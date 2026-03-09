@@ -394,10 +394,12 @@ def build_text(now_local: dt.datetime) -> str:
 
     # 组装：天气 -> 金价 -> 单词 -> 科技 -> 财经
     blocks = [
-        "小公主早安 🌸\n☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
-        f"{date_str} {weekday_cn}",
-        "",
         greeting,
+        "",
+        "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
+        "小公主早安 🌸",
+        "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
+        f"{date_str} {weekday_cn}",
         "",
         weather_block,
     ]
