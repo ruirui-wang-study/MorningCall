@@ -396,7 +396,7 @@ def build_text(now_local: dt.datetime) -> str:
         greeting,
         "",
         "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
-        "小公主早安 🌸",
+        "👑👑👑小公主早安👑👑👑",
         "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
         f"{date_str} {weekday_cn}",
         weather_block,
