@@ -395,9 +395,9 @@ def build_text(now_local: dt.datetime) -> str:
     blocks = [
         greeting,
         "",
-        "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
-        "👑👑👑小公主早安👑👑👑",
-        "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
+        "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
+        "👑👑👑🌸公主早安🌸👑👑👑",
+        "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
         f"{date_str} {weekday_cn}",
         weather_block,
     ]
