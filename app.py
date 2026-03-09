@@ -315,7 +315,6 @@ def build_text(now_local: dt.datetime) -> str:
     try:
         w = get_weather_qingpu()
         weather_block = "\n".join([
-            "天气（上海市青浦区）",
             f"当前：{w['desc']} {w['t']}°C（体感 {w['feels']}°C）",
             f"今日：{w['tmin']}°C ~ {w['tmax']}°C | 降水概率 {w['pop']}% | 风速 {w['wind']} km/h"
         ])
@@ -400,7 +399,6 @@ def build_text(now_local: dt.datetime) -> str:
         "小公主早安 🌸",
         "☀️☀️☀️☀️☀️☀️☀️☀️☀️☀️",
         f"{date_str} {weekday_cn}",
-        "",
         weather_block,
     ]
 
