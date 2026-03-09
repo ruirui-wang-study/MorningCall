@@ -35,14 +35,14 @@ jobs:
           # Gold
           TWELVE_DATA_API_KEY: ${{ secrets.TWELVE_DATA_API_KEY }}
           GOLD_SYMBOL: "XAU/USD"
+          # 可选：缺 key 隐藏模块（你 app.py 里有这个开关）
+          HIDE_MODULE_ON_MISSING_KEY: "1"
         run: |
           python app.py
-          echo "SUBJECT<<EOF" >> $GITHUB_ENV
-          cat email_subject.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
-          echo "BODY<<EOF" >> $GITHUB_ENV
-          cat email_body.txt >> $GITHUB_ENV
-          echo "EOF" >> $GITHUB_ENV
+          echo "=== subject ==="
+          cat email_subject.txt
+          echo "=== body ==="
+          cat email_body.txt
 
       - name: Send mail via QQ SMTP
         uses: dawidd6/action-send-mail@v3
@@ -52,7 +52,10 @@ jobs:
           secure: true
           username: ${{ secrets.MAIL_USERNAME }}   # 例如：962302845@qq.com
           password: ${{ secrets.MAIL_PASSWORD }}   # QQ邮箱SMTP授权码（不是登录密码）
-          subject: ${{ env.SUBJECT }}
-          to: 962302845@qq.com
           from: ${{ secrets.MAIL_USERNAME }}
-          body: ${{ env.BODY }}
+          to: 962302845@qq.com
+          subject: "早安播报"
+          # 关键：直接从文件读正文，避免多行 env 传输问题
+          body: file://email_body.txt
+          # 如果你未来想发 HTML，可用：
+          # html_body: file://email_body.html
